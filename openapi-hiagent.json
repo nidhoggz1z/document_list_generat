@@ -1,0 +1,1206 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "放款材料文件检索服务",
+    "description": "输入完整项目名称，严格匹配材料清单并返回完整正文纯文本；list 更新后下次查询自动生效。",
+    "version": "2.2.0"
+  },
+  "paths": {
+    "/retrieve": {
+      "post": {
+        "summary": "按项目名称严格获取材料清单正文",
+        "operationId": "retrieveDocuments",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetrievalInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "项目对应的材料清单不存在"
+          },
+          "409": {
+            "description": "存在重复项目名称"
+          },
+          "503": {
+            "description": "清单损坏、正在更新或目录不可用，请修复后重试"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Collateral": {
+        "properties": {
+          "cltlId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cltlid"
+          },
+          "cltlTp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cltltp"
+          },
+          "cltlNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cltlnm"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Collateral"
+      },
+      "CreateResponse": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "autoReply": {
+            "type": "string",
+            "const": "task created",
+            "title": "Autoreply"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "autoReply"
+        ],
+        "title": "CreateResponse"
+      },
+      "CreateTaskRequest": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "contractNum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contractnum"
+          },
+          "replyId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replyid"
+          },
+          "cstId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cstid"
+          },
+          "cstNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cstnm"
+          },
+          "ctrCharClcd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ctrcharclcd"
+          },
+          "ctrCharClNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ctrcharclnm"
+          },
+          "contractNatureCode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contractnaturecode"
+          },
+          "contractNatureNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contractnaturenm"
+          },
+          "aspdId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aspdid"
+          },
+          "aspdNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aspdnm"
+          },
+          "grtstlRcmbCd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grtstlrcmbcd"
+          },
+          "grtstlRcmbNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grtstlrcmbnm"
+          },
+          "primGrtstl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primgrtstl"
+          },
+          "primGrtstlNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primgrtstlnm"
+          },
+          "lwrsInd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lwrsind"
+          },
+          "lwrsIndNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lwrsindnm"
+          },
+          "cprsvPdPoolInd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cprsvpdpoolind"
+          },
+          "cprsvPdPoolIndNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cprsvpdpoolindnm"
+          },
+          "replyImageUrl": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Replyimageurl",
+            "description": "可直接 GET 下载单个批复 PDF 的 HTTP(S) URL，最大 10 MiB"
+          },
+          "expdtrHpnChar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expdtrhpnchar"
+          },
+          "expdtrHpnNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expdtrhpnnm"
+          },
+          "expdtrCharCd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expdtrcharcd"
+          },
+          "expdtrCharNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expdtrcharnm"
+          },
+          "ccy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ccy"
+          },
+          "ctrTamt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^$|^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ctrtamt"
+          },
+          "crlnFndsPymdCd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crlnfndspymdcd"
+          },
+          "crlnFndsPymdNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crlnfndspymdnm"
+          },
+          "payOutAspdId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payoutaspdid"
+          },
+          "payOutAspdNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payoutaspdnm"
+          },
+          "subcontracts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Subcontract"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontracts"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "replyImageUrl"
+        ],
+        "title": "CreateTaskRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HistoricalMaterialItem": {
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "pattern": "^R[0-9]{4,}$",
+            "title": "Itemid"
+          },
+          "itemType": {
+            "type": "string",
+            "const": "MATERIAL",
+            "title": "Itemtype"
+          },
+          "productName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Productname"
+          },
+          "materialName": {
+            "type": "string",
+            "title": "Materialname"
+          },
+          "sourceSystem": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Sourcesystem"
+          },
+          "policyBasis": {
+            "type": "string",
+            "title": "Policybasis"
+          },
+          "publishDate": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Publishdate"
+          },
+          "publishDepartment": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Publishdepartment"
+          },
+          "applicability": {
+            "type": "string",
+            "const": "APPLICABLE",
+            "title": "Applicability"
+          },
+          "requirement": {
+            "type": "string",
+            "title": "Requirement"
+          },
+          "sourceRuleId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Sourceruleid"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "itemId",
+          "itemType",
+          "productName",
+          "materialName",
+          "sourceSystem",
+          "policyBasis",
+          "publishDate",
+          "publishDepartment",
+          "applicability",
+          "requirement",
+          "sourceRuleId",
+          "reason"
+        ],
+        "title": "HistoricalMaterialItem",
+        "description": "Keep saved material fields intact when reading historical results."
+      },
+      "HistoricalTaskResult": {
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "title": "Generatedat"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Total"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetadata"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Products"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMaterials"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Items"
+          },
+          "sourceDocumentHash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sourcedocumenthash"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generatedAt",
+          "total",
+          "products",
+          "items",
+          "sourceDocumentHash"
+        ],
+        "title": "HistoricalTaskResult",
+        "description": "Preserve the original public hash on results saved before its removal."
+      },
+      "JointGuarantor": {
+        "properties": {
+          "cstId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cstid"
+          },
+          "cstNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cstnm"
+          },
+          "idCardNo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idcardno"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "JointGuarantor"
+      },
+      "MaterialCategory": {
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Categoryid"
+          },
+          "categoryName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Categoryname"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialCategory"
+            },
+            "type": "array",
+            "title": "Children"
+          },
+          "materials": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MaterialItem"
+                },
+                {
+                  "$ref": "#/components/schemas/HistoricalMaterialItem"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Materials"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "categoryId",
+          "categoryName",
+          "children",
+          "materials"
+        ],
+        "title": "MaterialCategory"
+      },
+      "MaterialItem": {
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "pattern": "^R[0-9]{4,}$",
+            "title": "Itemid"
+          },
+          "itemType": {
+            "type": "string",
+            "const": "MATERIAL",
+            "title": "Itemtype"
+          },
+          "productName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Productname"
+          },
+          "materialName": {
+            "type": "string",
+            "title": "Materialname"
+          },
+          "sourceSystem": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Sourcesystem"
+          },
+          "policyBasis": {
+            "type": "string",
+            "title": "Policybasis"
+          },
+          "publishDate": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Publishdate"
+          },
+          "publishDepartment": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Publishdepartment"
+          },
+          "applicability": {
+            "type": "string",
+            "const": "APPLICABLE",
+            "title": "Applicability"
+          },
+          "requirement": {
+            "type": "string",
+            "title": "Requirement"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "itemId",
+          "itemType",
+          "productName",
+          "materialName",
+          "sourceSystem",
+          "policyBasis",
+          "publishDate",
+          "publishDepartment",
+          "applicability",
+          "requirement"
+        ],
+        "title": "MaterialItem"
+      },
+      "ProductMaterials": {
+        "properties": {
+          "productName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Productname"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialCategory"
+            },
+            "type": "array",
+            "title": "Categories"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "productName",
+          "categories"
+        ],
+        "title": "ProductMaterials"
+      },
+      "ProductMetadata": {
+        "properties": {
+          "extractedProductName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Extractedproductname"
+          },
+          "productName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Productname"
+          },
+          "checklistFileName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Checklistfilename"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "extractedProductName",
+          "productName",
+          "checklistFileName"
+        ],
+        "title": "ProductMetadata"
+      },
+      "ReplyResponse": {
+        "properties": {
+          "reply": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reply"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "title": "ReplyResponse"
+      },
+      "RetrievalInput": {
+        "properties": {
+          "param": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Param",
+            "description": "完整项目名称，例如：流动资金贷款。严格匹配对应材料清单，不含材料清单或 .docx 后缀。"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "param"
+        ],
+        "title": "RetrievalInput"
+      },
+      "Subcontract": {
+        "properties": {
+          "subcontractNum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractnum"
+          },
+          "gnrNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gnrnm"
+          },
+          "gnrId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gnrid"
+          },
+          "frmCtrTpcd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frmctrtpcd"
+          },
+          "frmCtrTpNm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frmctrtpnm"
+          },
+          "jntGnrInfs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JointGuarantor"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jntgnrinfs"
+          },
+          "SubcontractCollateralRels": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/Collateral"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subcontractcollateralrels"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Subcontract"
+      },
+      "TaskDoneResponse": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "status": {
+            "type": "string",
+            "const": "DONE",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "const": "生成完成",
+            "title": "Message"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskResult"
+              },
+              {
+                "$ref": "#/components/schemas/HistoricalTaskResult"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "status",
+          "message",
+          "data"
+        ],
+        "title": "TaskDoneResponse"
+      },
+      "TaskFailureResponse": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "status": {
+            "type": "string",
+            "const": "FAILED",
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "status",
+          "reason"
+        ],
+        "title": "TaskFailureResponse"
+      },
+      "TaskIdentity": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId"
+        ],
+        "title": "TaskIdentity"
+      },
+      "TaskNotCreatedResponse": {
+        "properties": {
+          "reply": {
+            "type": "string",
+            "const": "任务未创建",
+            "title": "Reply"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "title": "TaskNotCreatedResponse"
+      },
+      "TaskResult": {
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "title": "Generatedat"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Total"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetadata"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Products"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMaterials"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generatedAt",
+          "total",
+          "products",
+          "items"
+        ],
+        "title": "TaskResult"
+      },
+      "TaskStatusResponse": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "TERMINATED"
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "status"
+        ],
+        "title": "TaskStatusResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://YOUR_SERVER_IP:8000"
+    }
+  ]
+}

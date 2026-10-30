@@ -1,0 +1,1583 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Personalized disbursement material task service",
+    "version": "2.4.0",
+    "description": "2026-10-29: Accept the original business JSON directly. Download replyImageUrl before accepting a task. Download failure does not create or replace tasks; subsequent processing and results are unchanged. 2026-10-30: Personalized tasks resolve non-exact product names to unique existing checklist candidates using the generation model. Original approval product names and facts are preserved; checklistFileName identifies the selected Word file."
+  },
+  "servers": [
+    {
+      "url": "http://YOUR_SERVER_IP:8000",
+      "description": "Replace with deployment address; local verification is not deployment acceptance."
+    }
+  ],
+  "paths": {
+    "/api/v1/tasks": {
+      "post": {
+        "operationId": "createChecklistTask",
+        "summary": "Download approval PDF from JSON and create or replace a task.",
+        "description": "Direct application/json body. Require bsnEvtId,userNo,taskId,replyImageUrl. GET one PDF from HTTP(S), including intranet hosts; max 10 MiB. Download and validate before saving/enqueueing. Failed submissions never modify old tasks. Redirect limit 5, per-operation network timeout 30 seconds, total download deadline 60 seconds; no automatic download retries.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task persisted and enqueued; generation not yet completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateResponse"
+                },
+                "example": {
+                  "bsnEvtId": "B001",
+                  "userNo": "U001",
+                  "taskId": "T001",
+                  "autoReply": "task created"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid content type or JSON syntax. No task mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "请求格式无效"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Missing/invalid identifiers or replyImageUrl, invalid business fields, or empty PDF. No task mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "必填字段缺失或无效"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or service unavailable. Creation not acknowledged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "服务暂不可用"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected service error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "服务内部错误"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PDF exceeds 10 MiB.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "PDF超过大小限制"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Uploaded content is not PDF.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "仅支持PDF"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "PDF download HTTP/network failure or too many redirects. No task mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "PDF download timeout. No task mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/query": {
+      "post": {
+        "operationId": "queryChecklistTask",
+        "summary": "Query a task state or its saved result.",
+        "description": "Lookup uses bsnEvtId+taskId, not userNo. An existing record echoes its saved creation userNo. No generation or current-rule refresh on query. All task states and not-found use HTTP 200. Restart marks unfinished tasks FAILED; no automatic rerun.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskIdentity"
+              },
+              "example": {
+                "bsnEvtId": "B001",
+                "userNo": "U001",
+                "taskId": "T001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mutually exclusive saved state/result or task-not-created reply.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/TaskStatusResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TaskFailureResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TaskDoneResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TaskNotCreatedResponse"
+                    }
+                  ]
+                },
+                "examples": {
+                  "PENDING": {
+                    "value": {
+                      "bsnEvtId": "B001",
+                      "userNo": "U001",
+                      "taskId": "T001",
+                      "status": "PENDING"
+                    }
+                  },
+                  "PROCESSING": {
+                    "value": {
+                      "bsnEvtId": "B001",
+                      "userNo": "U001",
+                      "taskId": "T001",
+                      "status": "PROCESSING"
+                    }
+                  },
+                  "TERMINATED": {
+                    "value": {
+                      "bsnEvtId": "B001",
+                      "userNo": "U001",
+                      "taskId": "T001",
+                      "status": "TERMINATED"
+                    }
+                  },
+                  "FAILED": {
+                    "value": {
+                      "bsnEvtId": "B001",
+                      "userNo": "U001",
+                      "taskId": "T001",
+                      "status": "FAILED",
+                      "reason": "未识别到可售产品"
+                    }
+                  },
+                  "DONE": {
+                    "value": {
+                      "status": "DONE",
+                      "bsnEvtId": "B001",
+                      "userNo": "U001",
+                      "taskId": "T001",
+                      "message": "生成完成",
+                      "data": {
+                        "generatedAt": "2026-10-27T02:00:00+00:00",
+                        "total": 2,
+                        "products": [
+                          {
+                            "extractedProductName": "流动资金贷款",
+                            "productName": "流动资金贷款",
+                            "checklistFileName": "流动资金贷款材料清单.docx"
+                          },
+                          {
+                            "extractedProductName": "固定资产贷款",
+                            "productName": "固定资产贷款",
+                            "checklistFileName": "固定资产贷款材料清单.docx"
+                          }
+                        ],
+                        "items": [
+                          {
+                            "productName": "流动资金贷款",
+                            "categories": [
+                              {
+                                "categoryId": "1",
+                                "categoryName": "基本资料",
+                                "children": [
+                                  {
+                                    "categoryId": "1.1",
+                                    "categoryName": "借款人基本资料",
+                                    "children": [],
+                                    "materials": [
+                                      {
+                                        "itemId": "R0001",
+                                        "itemType": "MATERIAL",
+                                        "materialName": "[流动资金贷款]营业执照或其他主体资格证明（示例借款有限公司）（提供借款人有效营业执照或与主体性质相应的资格证明，核对名称及法定代表人信息。）",
+                                        "sourceSystem": "上银办",
+                                        "policyBasis": "《上海银行放款操作规程（2026年版）》上银办〔2026〕380号；第四条（一）；第二十三条1.1",
+                                        "publishDate": "2026年",
+                                        "publishDepartment": "上海银行",
+                                        "applicability": "APPLICABLE",
+                                        "requirement": "提供借款人有效营业执照或与主体性质相应的资格证明，核对名称及法定代表人信息。",
+                                        "productName": "流动资金贷款"
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "materials": []
+                              }
+                            ]
+                          },
+                          {
+                            "productName": "固定资产贷款",
+                            "categories": [
+                              {
+                                "categoryId": "1",
+                                "categoryName": "基本资料",
+                                "children": [
+                                  {
+                                    "categoryId": "1.1",
+                                    "categoryName": "借款人基本资料",
+                                    "children": [],
+                                    "materials": [
+                                      {
+                                        "itemId": "R0002",
+                                        "itemType": "MATERIAL",
+                                        "materialName": "[固定资产贷款]营业执照或其他主体资格证明（示例借款有限公司）（提供借款人有效营业执照或与主体性质相应的资格证明，核对名称及法定代表人信息。）",
+                                        "sourceSystem": "上银办",
+                                        "policyBasis": "《上海银行放款操作规程（2026年版）》上银办〔2026〕380号；第四条（一）；第二十三条1.1",
+                                        "publishDate": "2026年",
+                                        "publishDepartment": "上海银行",
+                                        "applicability": "APPLICABLE",
+                                        "requirement": "提供借款人有效营业执照或与主体性质相应的资格证明，核对名称及法定代表人信息。",
+                                        "productName": "固定资产贷款"
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "materials": []
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "NOT_CREATED": {
+                    "value": {
+                      "reply": "任务未创建"
+                    }
+                  },
+                  "HISTORICAL_DONE": {
+                    "summary": "Historical response preserving its original public hash",
+                    "value": {
+                      "status": "DONE",
+                      "bsnEvtId": "B001",
+                      "userNo": "U001",
+                      "taskId": "T001",
+                      "message": "生成完成",
+                      "data": {
+                        "sourceDocumentHash": "0000000000000000000000000000000000000000000000000000000000000000",
+                        "generatedAt": "2026-10-27T02:00:00+00:00",
+                        "total": 2,
+                        "products": [
+                          {
+                            "extractedProductName": "流动资金贷款",
+                            "productName": "流动资金贷款",
+                            "checklistFileName": "流动资金贷款材料清单.docx"
+                          },
+                          {
+                            "extractedProductName": "固定资产贷款",
+                            "productName": "固定资产贷款",
+                            "checklistFileName": "固定资产贷款材料清单.docx"
+                          }
+                        ],
+                        "items": [
+                          {
+                            "productName": "流动资金贷款",
+                            "categories": [
+                              {
+                                "categoryId": "1",
+                                "categoryName": "基本资料",
+                                "children": [
+                                  {
+                                    "categoryId": "1.1",
+                                    "categoryName": "借款人基本资料",
+                                    "children": [],
+                                    "materials": [
+                                      {
+                                        "itemId": "R0001",
+                                        "itemType": "MATERIAL",
+                                        "materialName": "[流动资金贷款]营业执照或其他主体资格证明（示例借款有限公司）（提供借款人有效营业执照或与主体性质相应的资格证明，核对名称及法定代表人信息。）",
+                                        "sourceSystem": "上银办",
+                                        "policyBasis": "《上海银行放款操作规程（2026年版）》上银办〔2026〕380号；第四条（一）；第二十三条1.1",
+                                        "publishDate": "2026年",
+                                        "publishDepartment": "上海银行",
+                                        "applicability": "APPLICABLE",
+                                        "requirement": "提供借款人有效营业执照或与主体性质相应的资格证明，核对名称及法定代表人信息。",
+                                        "productName": "流动资金贷款"
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "materials": []
+                              }
+                            ]
+                          },
+                          {
+                            "productName": "固定资产贷款",
+                            "categories": [
+                              {
+                                "categoryId": "1",
+                                "categoryName": "基本资料",
+                                "children": [
+                                  {
+                                    "categoryId": "1.1",
+                                    "categoryName": "借款人基本资料",
+                                    "children": [],
+                                    "materials": [
+                                      {
+                                        "itemId": "R0002",
+                                        "itemType": "MATERIAL",
+                                        "materialName": "[固定资产贷款]营业执照或其他主体资格证明（示例借款有限公司）（提供借款人有效营业执照或与主体性质相应的资格证明，核对名称及法定代表人信息。）",
+                                        "sourceSystem": "上银办",
+                                        "policyBasis": "《上海银行放款操作规程（2026年版）》上银办〔2026〕380号；第四条（一）；第二十三条1.1",
+                                        "publishDate": "2026年",
+                                        "publishDepartment": "上海银行",
+                                        "applicability": "APPLICABLE",
+                                        "requirement": "提供借款人有效营业执照或与主体性质相应的资格证明，核对名称及法定代表人信息。",
+                                        "productName": "固定资产贷款"
+                                      }
+                                    ]
+                                  }
+                                ],
+                                "materials": []
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed query JSON syntax.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "请求格式无效"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Missing/null/blank identifiers, invalid field types or empty PDF. No task mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "必填字段缺失或无效"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage or service unavailable. Creation not acknowledged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "服务暂不可用"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected service error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyResponse"
+                },
+                "example": {
+                  "reply": "服务内部错误"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BusinessData": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "description": "Required, trimmed identifier.",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "userNo": {
+            "type": "string",
+            "description": "Required, trimmed identifier; stored creation userNo is echoed for an existing task.",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "taskId": {
+            "type": "string",
+            "description": "Required, trimmed identifier.",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "contractNum": {
+            "type": "string",
+            "description": "Contract number.",
+            "nullable": true
+          },
+          "replyId": {
+            "type": "string",
+            "description": "Approval ID.",
+            "nullable": true
+          },
+          "cstId": {
+            "type": "string",
+            "description": "Customer ID.",
+            "nullable": true
+          },
+          "cstNm": {
+            "type": "string",
+            "description": "Customer name.",
+            "nullable": true
+          },
+          "ctrCharClcd": {
+            "type": "string",
+            "description": "Contract occurrence nature code.",
+            "nullable": true
+          },
+          "ctrCharClNm": {
+            "type": "string",
+            "description": "Contract occurrence nature name.",
+            "nullable": true
+          },
+          "contractNatureCode": {
+            "type": "string",
+            "description": "Contract nature code.",
+            "nullable": true
+          },
+          "contractNatureNm": {
+            "type": "string",
+            "description": "Contract nature name.",
+            "nullable": true
+          },
+          "aspdId": {
+            "type": "string",
+            "description": "Contract saleable product ID.",
+            "nullable": true
+          },
+          "aspdNm": {
+            "type": "string",
+            "description": "Contract saleable product name; may describe a parent product pool.",
+            "nullable": true
+          },
+          "grtstlRcmbCd": {
+            "type": "string",
+            "description": "Guarantee method code.",
+            "nullable": true
+          },
+          "grtstlRcmbNm": {
+            "type": "string",
+            "description": "Guarantee method name.",
+            "nullable": true
+          },
+          "primGrtstl": {
+            "type": "string",
+            "description": "Primary guarantee method code.",
+            "nullable": true
+          },
+          "primGrtstlNm": {
+            "type": "string",
+            "description": "Primary guarantee method name.",
+            "nullable": true
+          },
+          "lwrsInd": {
+            "type": "string",
+            "description": "Low risk code; do not assume the meaning of internal codes.",
+            "nullable": true
+          },
+          "lwrsIndNm": {
+            "type": "string",
+            "description": "Low risk indicator name.",
+            "nullable": true
+          },
+          "cprsvPdPoolInd": {
+            "type": "string",
+            "description": "Comprehensive product pool indicator code.",
+            "nullable": true
+          },
+          "cprsvPdPoolIndNm": {
+            "type": "string",
+            "description": "Comprehensive product pool indicator name.",
+            "nullable": true
+          },
+          "replyImageUrl": {
+            "type": "string",
+            "description": "Approval PDF URL. Required and downloaded for task creation; optional in historical business data.",
+            "nullable": true
+          },
+          "expdtrHpnChar": {
+            "type": "string",
+            "description": "Drawdown occurrence nature code.",
+            "nullable": true
+          },
+          "expdtrHpnNm": {
+            "type": "string",
+            "description": "Drawdown occurrence nature name.",
+            "nullable": true
+          },
+          "expdtrCharCd": {
+            "type": "string",
+            "description": "Drawdown nature code.",
+            "nullable": true
+          },
+          "expdtrCharNm": {
+            "type": "string",
+            "description": "Drawdown nature name.",
+            "nullable": true
+          },
+          "ccy": {
+            "type": "string",
+            "description": "Currency code as supplied by the upstream system.",
+            "nullable": true
+          },
+          "ctrTamt": {
+            "type": "string",
+            "description": "Disbursement amount as a decimal string, or empty if unknown.",
+            "pattern": "^$|^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+            "nullable": true
+          },
+          "crlnFndsPymdCd": {
+            "type": "string",
+            "description": "Payment method code.",
+            "nullable": true
+          },
+          "crlnFndsPymdNm": {
+            "type": "string",
+            "description": "Payment method name.",
+            "nullable": true
+          },
+          "payOutAspdId": {
+            "type": "string",
+            "description": "Drawdown saleable product ID.",
+            "nullable": true
+          },
+          "payOutAspdNm": {
+            "type": "string",
+            "description": "Optional drawdown product context; PDF explicit facts take priority. Never used as fallback when the PDF contains no identifiable saleable product.",
+            "nullable": true
+          },
+          "subcontracts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Subcontract"
+            },
+            "description": "Optional original subcontract details; null ignored. PDF explicit facts take priority.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId"
+        ],
+        "description": "Reusable business data. Creation uses CreateTaskRequest, which requires replyImageUrl. Optional null fields are ignored and additional business fields retained."
+      },
+      "Subcontract": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "subcontractNum": {
+            "type": "string",
+            "description": "Subcontract number.",
+            "nullable": true
+          },
+          "gnrNm": {
+            "type": "string",
+            "description": "Guarantor name.",
+            "nullable": true
+          },
+          "gnrId": {
+            "type": "string",
+            "description": "Guarantor ID.",
+            "nullable": true
+          },
+          "frmCtrTpcd": {
+            "type": "string",
+            "description": "Subcontract type code.",
+            "nullable": true
+          },
+          "frmCtrTpNm": {
+            "type": "string",
+            "description": "Subcontract type name.",
+            "nullable": true
+          },
+          "jntGnrInfs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/JointGuarantor"
+            },
+            "nullable": true
+          },
+          "SubcontractCollateralRels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Collateral"
+            },
+            "description": "Preserve uppercase S exactly.",
+            "nullable": true
+          }
+        },
+        "required": []
+      },
+      "JointGuarantor": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "cstId": {
+            "type": "string",
+            "description": "Joint guarantor customer ID.",
+            "nullable": true
+          },
+          "cstNm": {
+            "type": "string",
+            "description": "Joint guarantor name.",
+            "nullable": true
+          },
+          "idCardNo": {
+            "type": "string",
+            "description": "Identity card number; sensitive, must not be echoed in error logs.",
+            "nullable": true
+          }
+        },
+        "required": []
+      },
+      "Collateral": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "cltlId": {
+            "type": "string",
+            "description": "Collateral ID.",
+            "nullable": true
+          },
+          "cltlTp": {
+            "type": "string",
+            "description": "Collateral type code/name as supplied.",
+            "nullable": true
+          },
+          "cltlNm": {
+            "type": "string",
+            "description": "Collateral name.",
+            "nullable": true
+          }
+        },
+        "required": []
+      },
+      "TaskIdentity": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId"
+        ],
+        "title": "TaskIdentity"
+      },
+      "CreateResponse": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "autoReply": {
+            "type": "string",
+            "const": "task created",
+            "title": "Autoreply"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "autoReply"
+        ],
+        "title": "CreateResponse"
+      },
+      "TaskStatusResponse": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "TERMINATED"
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "status"
+        ],
+        "title": "TaskStatusResponse"
+      },
+      "TaskFailureResponse": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "status": {
+            "type": "string",
+            "const": "FAILED",
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "status",
+          "reason"
+        ],
+        "title": "TaskFailureResponse"
+      },
+      "ReplyResponse": {
+        "properties": {
+          "reply": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reply"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "title": "ReplyResponse"
+      },
+      "ProductMetadata": {
+        "properties": {
+          "extractedProductName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Extractedproductname"
+          },
+          "productName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Productname"
+          },
+          "checklistFileName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Checklistfilename"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "extractedProductName",
+          "productName",
+          "checklistFileName"
+        ],
+        "title": "ProductMetadata"
+      },
+      "MaterialItem": {
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "pattern": "^R[0-9]{4,}$",
+            "title": "Itemid"
+          },
+          "itemType": {
+            "type": "string",
+            "const": "MATERIAL",
+            "title": "Itemtype"
+          },
+          "productName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Productname"
+          },
+          "materialName": {
+            "type": "string",
+            "title": "Materialname"
+          },
+          "sourceSystem": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Sourcesystem"
+          },
+          "policyBasis": {
+            "type": "string",
+            "title": "Policybasis"
+          },
+          "publishDate": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Publishdate"
+          },
+          "publishDepartment": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Publishdepartment"
+          },
+          "applicability": {
+            "type": "string",
+            "const": "APPLICABLE",
+            "title": "Applicability"
+          },
+          "requirement": {
+            "type": "string",
+            "title": "Requirement"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "itemId",
+          "itemType",
+          "productName",
+          "materialName",
+          "sourceSystem",
+          "policyBasis",
+          "publishDate",
+          "publishDepartment",
+          "applicability",
+          "requirement"
+        ],
+        "title": "MaterialItem"
+      },
+      "TaskResult": {
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "title": "Generatedat"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Total"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetadata"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Products"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMaterials"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generatedAt",
+          "total",
+          "products",
+          "items"
+        ],
+        "title": "TaskResult"
+      },
+      "TaskDoneResponse": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "status": {
+            "type": "string",
+            "const": "DONE",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "const": "生成完成",
+            "title": "Message"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskResult"
+              },
+              {
+                "$ref": "#/components/schemas/HistoricalTaskResult"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "status",
+          "message",
+          "data"
+        ],
+        "title": "TaskDoneResponse"
+      },
+      "TaskNotCreatedResponse": {
+        "properties": {
+          "reply": {
+            "type": "string",
+            "const": "任务未创建",
+            "title": "Reply"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reply"
+        ],
+        "title": "TaskNotCreatedResponse"
+      },
+      "MaterialCategory": {
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Categoryid"
+          },
+          "categoryName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Categoryname"
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialCategory"
+            },
+            "type": "array",
+            "title": "Children"
+          },
+          "materials": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MaterialItem"
+                },
+                {
+                  "$ref": "#/components/schemas/HistoricalMaterialItem"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Materials"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "categoryId",
+          "categoryName",
+          "children",
+          "materials"
+        ],
+        "title": "MaterialCategory"
+      },
+      "ProductMaterials": {
+        "properties": {
+          "productName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Productname"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialCategory"
+            },
+            "type": "array",
+            "title": "Categories"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "productName",
+          "categories"
+        ],
+        "title": "ProductMaterials"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HistoricalMaterialItem": {
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "pattern": "^R[0-9]{4,}$",
+            "title": "Itemid"
+          },
+          "itemType": {
+            "type": "string",
+            "const": "MATERIAL",
+            "title": "Itemtype"
+          },
+          "productName": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Productname"
+          },
+          "materialName": {
+            "type": "string",
+            "title": "Materialname"
+          },
+          "sourceSystem": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Sourcesystem"
+          },
+          "policyBasis": {
+            "type": "string",
+            "title": "Policybasis"
+          },
+          "publishDate": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Publishdate"
+          },
+          "publishDepartment": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Publishdepartment"
+          },
+          "applicability": {
+            "type": "string",
+            "const": "APPLICABLE",
+            "title": "Applicability"
+          },
+          "requirement": {
+            "type": "string",
+            "title": "Requirement"
+          },
+          "sourceRuleId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Sourceruleid"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "itemId",
+          "itemType",
+          "productName",
+          "materialName",
+          "sourceSystem",
+          "policyBasis",
+          "publishDate",
+          "publishDepartment",
+          "applicability",
+          "requirement",
+          "sourceRuleId",
+          "reason"
+        ],
+        "title": "HistoricalMaterialItem",
+        "description": "Keep saved material fields intact when reading historical results."
+      },
+      "RetrievalInput": {
+        "properties": {
+          "param": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Param",
+            "description": "完整项目名称，例如：流动资金贷款。严格匹配对应材料清单，不含材料清单或 .docx 后缀。"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "param"
+        ],
+        "title": "RetrievalInput"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "HistoricalTaskResult": {
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "title": "Generatedat"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Total"
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMetadata"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Products"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProductMaterials"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Items"
+          },
+          "sourceDocumentHash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sourcedocumenthash"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generatedAt",
+          "total",
+          "products",
+          "items",
+          "sourceDocumentHash"
+        ],
+        "title": "HistoricalTaskResult",
+        "description": "Preserve the original public hash on results saved before its removal."
+      },
+      "CreateTaskRequest": {
+        "properties": {
+          "bsnEvtId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Bsnevtid"
+          },
+          "userNo": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Userno"
+          },
+          "taskId": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Taskid"
+          },
+          "contractNum": {
+            "title": "Contractnum",
+            "type": "string",
+            "nullable": true
+          },
+          "replyId": {
+            "title": "Replyid",
+            "type": "string",
+            "nullable": true
+          },
+          "cstId": {
+            "title": "Cstid",
+            "type": "string",
+            "nullable": true
+          },
+          "cstNm": {
+            "title": "Cstnm",
+            "type": "string",
+            "nullable": true
+          },
+          "ctrCharClcd": {
+            "title": "Ctrcharclcd",
+            "type": "string",
+            "nullable": true
+          },
+          "ctrCharClNm": {
+            "title": "Ctrcharclnm",
+            "type": "string",
+            "nullable": true
+          },
+          "contractNatureCode": {
+            "title": "Contractnaturecode",
+            "type": "string",
+            "nullable": true
+          },
+          "contractNatureNm": {
+            "title": "Contractnaturenm",
+            "type": "string",
+            "nullable": true
+          },
+          "aspdId": {
+            "title": "Aspdid",
+            "type": "string",
+            "nullable": true
+          },
+          "aspdNm": {
+            "title": "Aspdnm",
+            "type": "string",
+            "nullable": true
+          },
+          "grtstlRcmbCd": {
+            "title": "Grtstlrcmbcd",
+            "type": "string",
+            "nullable": true
+          },
+          "grtstlRcmbNm": {
+            "title": "Grtstlrcmbnm",
+            "type": "string",
+            "nullable": true
+          },
+          "primGrtstl": {
+            "title": "Primgrtstl",
+            "type": "string",
+            "nullable": true
+          },
+          "primGrtstlNm": {
+            "title": "Primgrtstlnm",
+            "type": "string",
+            "nullable": true
+          },
+          "lwrsInd": {
+            "title": "Lwrsind",
+            "type": "string",
+            "nullable": true
+          },
+          "lwrsIndNm": {
+            "title": "Lwrsindnm",
+            "type": "string",
+            "nullable": true
+          },
+          "cprsvPdPoolInd": {
+            "title": "Cprsvpdpoolind",
+            "type": "string",
+            "nullable": true
+          },
+          "cprsvPdPoolIndNm": {
+            "title": "Cprsvpdpoolindnm",
+            "type": "string",
+            "nullable": true
+          },
+          "replyImageUrl": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Replyimageurl",
+            "description": "可直接 GET 下载单个批复 PDF 的 HTTP(S) URL，最大 10 MiB"
+          },
+          "expdtrHpnChar": {
+            "title": "Expdtrhpnchar",
+            "type": "string",
+            "nullable": true
+          },
+          "expdtrHpnNm": {
+            "title": "Expdtrhpnnm",
+            "type": "string",
+            "nullable": true
+          },
+          "expdtrCharCd": {
+            "title": "Expdtrcharcd",
+            "type": "string",
+            "nullable": true
+          },
+          "expdtrCharNm": {
+            "title": "Expdtrcharnm",
+            "type": "string",
+            "nullable": true
+          },
+          "ccy": {
+            "title": "Ccy",
+            "type": "string",
+            "nullable": true
+          },
+          "ctrTamt": {
+            "title": "Ctrtamt",
+            "type": "string",
+            "pattern": "^$|^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+            "nullable": true
+          },
+          "crlnFndsPymdCd": {
+            "title": "Crlnfndspymdcd",
+            "type": "string",
+            "nullable": true
+          },
+          "crlnFndsPymdNm": {
+            "title": "Crlnfndspymdnm",
+            "type": "string",
+            "nullable": true
+          },
+          "payOutAspdId": {
+            "title": "Payoutaspdid",
+            "type": "string",
+            "nullable": true
+          },
+          "payOutAspdNm": {
+            "title": "Payoutaspdnm",
+            "type": "string",
+            "nullable": true
+          },
+          "subcontracts": {
+            "title": "Subcontracts",
+            "items": {
+              "$ref": "#/components/schemas/Subcontract"
+            },
+            "type": "array",
+            "nullable": true
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "bsnEvtId",
+          "userNo",
+          "taskId",
+          "replyImageUrl"
+        ],
+        "title": "CreateTaskRequest"
+      }
+    }
+  },
+  "x-implementation-status": "local-route-contract-verified-T23; deployment-and-real-model-acceptance-pending",
+  "x-sdd-document": "spec.md",
+  "x-model-api-configuration": {
+    "scope": "server-side deployment configuration; not caller request fields",
+    "transport": {
+      "method": "POST",
+      "contentType": "application/json",
+      "protocol": "Chat Completions compatible",
+      "authentication": "Authorization: Bearer <stage API key>"
+    },
+    "template": "model-api.env.example",
+    "stages": {
+      "extract": {
+        "apiUrlEnv": "EXTRACT_MODEL_API_URL",
+        "apiKeyEnv": "EXTRACT_MODEL_API_KEY",
+        "modelNameEnv": "EXTRACT_MODEL_NAME"
+      },
+      "generate": {
+        "apiUrlEnv": "GENERATE_MODEL_API_URL",
+        "apiKeyEnv": "GENERATE_MODEL_API_KEY",
+        "modelNameEnv": "GENERATE_MODEL_NAME"
+      }
+    },
+    "required": true,
+    "implementationStatus": "implemented; offline HTTP transport verified; real model acceptance pending T28",
+    "deployment": "Inject process environment variables or use Docker --env-file. Do not embed actual keys in code, archives, prompts, logs, responses or business requests."
+  },
+  "x-contract-invariants": [
+    "One effective local worker; provider inference may continue after local cancellation.",
+    "Only the current internal generationId in PROCESSING may publish a result.",
+    "Replacement cancels same-business unfinished tasks and enqueues at tail.",
+    "Restart fails all persisted PENDING/PROCESSING tasks without rerun.",
+    "PDF explicit facts take priority; JSON fills facts absent from PDF, never supplies a missing product.",
+    "All saleable products must match exact checklist files and complete processing.",
+    "Only explicitly applicable materials are retained; uncertain applicability is excluded. grtstlRcmbNm filters mismatched first-level directories; headings without stage terms remain eligible.",
+    "No merging across subjects or products; names carry a product prefix; items are grouped by product and original Word directories.",
+    "total equals recursive material leaf count; item IDs unique and product references valid.",
+    "No partial successful output; zero final materials is FAILED.",
+    "Missing display system/date/department use specified defaults; other missing display strings are empty."
+  ]
+}

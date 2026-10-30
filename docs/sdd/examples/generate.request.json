@@ -1,0 +1,57 @@
+{
+  "bsnEvtId": "B001",
+  "userNo": "U001",
+  "taskId": "T001",
+  "contractNum": "HT202610220001",
+  "replyId": "PF202610220001",
+  "cstId": "CST001",
+  "cstNm": "示例借款有限公司",
+  "ctrCharClcd": "",
+  "ctrCharClNm": "",
+  "contractNatureCode": "",
+  "contractNatureNm": "",
+  "aspdId": "",
+  "aspdNm": "",
+  "grtstlRcmbCd": "",
+  "grtstlRcmbNm": "保证",
+  "primGrtstl": "",
+  "primGrtstlNm": "保证",
+  "lwrsInd": "",
+  "lwrsIndNm": "",
+  "cprsvPdPoolInd": "",
+  "cprsvPdPoolIndNm": "",
+  "replyImageUrl": "http://intranet-file-server/approvals/approval.pdf",
+  "expdtrHpnChar": "",
+  "expdtrHpnNm": "",
+  "expdtrCharCd": "",
+  "expdtrCharNm": "",
+  "ccy": "CNY",
+  "ctrTamt": "1000000.00",
+  "crlnFndsPymdCd": "",
+  "crlnFndsPymdNm": "",
+  "payOutAspdId": "",
+  "payOutAspdNm": "",
+  "subcontracts": [
+    {
+      "subcontractNum": "DB202610220001",
+      "gnrNm": "示例担保有限公司",
+      "gnrId": "CST002",
+      "frmCtrTpcd": "",
+      "frmCtrTpNm": "保证合同",
+      "jntGnrInfs": [
+        {
+          "cstId": "CST003",
+          "cstNm": "示例共同担保人",
+          "idCardNo": ""
+        }
+      ],
+      "SubcontractCollateralRels": [
+        {
+          "cltlId": "",
+          "cltlTp": "",
+          "cltlNm": ""
+        }
+      ]
+    }
+  ]
+}

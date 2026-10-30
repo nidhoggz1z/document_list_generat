@@ -1,0 +1,134 @@
+{
+  "status": "DONE",
+  "bsnEvtId": "B001",
+  "userNo": "U001",
+  "taskId": "T001",
+  "message": "生成完成",
+  "data": {
+    "generatedAt": "2026-10-27T02:00:00+00:00",
+    "total": 5,
+    "products": [
+      {
+        "extractedProductName": "流动资金贷款",
+        "productName": "流动资金贷款",
+        "checklistFileName": "流动资金贷款材料清单.docx"
+      }
+    ],
+    "items": [
+      {
+        "productName": "流动资金贷款",
+        "categories": [
+          {
+            "categoryId": "1",
+            "categoryName": "基本资料",
+            "children": [
+              {
+                "categoryId": "1.1",
+                "categoryName": "借款人基本资料",
+                "children": [],
+                "materials": [
+                  {
+                    "itemId": "R0001",
+                    "itemType": "MATERIAL",
+                    "materialName": "[流动资金贷款]企业章程（示例借款公司）",
+                    "sourceSystem": "上银办",
+                    "policyBasis": "第四条（二）；第二十三条1.1",
+                    "publishDate": "2026年",
+                    "publishDepartment": "上海银行",
+                    "applicability": "APPLICABLE",
+                    "requirement": "",
+                    "productName": "流动资金贷款"
+                  }
+                ]
+              },
+              {
+                "categoryId": "1.2",
+                "categoryName": "企业担保人及增信人基本资料",
+                "children": [],
+                "materials": [
+                  {
+                    "itemId": "R0002",
+                    "itemType": "MATERIAL",
+                    "materialName": "[流动资金贷款]营业执照或其他主体资格证明（甲担保公司）",
+                    "sourceSystem": "上银办",
+                    "policyBasis": "第四条（一）；第二十三条1.2",
+                    "publishDate": "2026年",
+                    "publishDepartment": "上海银行",
+                    "applicability": "APPLICABLE",
+                    "requirement": "",
+                    "productName": "流动资金贷款"
+                  }
+                ]
+              }
+            ],
+            "materials": []
+          },
+          {
+            "categoryId": "2",
+            "categoryName": "合同签约资料",
+            "children": [
+              {
+                "categoryId": "2.1",
+                "categoryName": "授信及担保合同",
+                "children": [],
+                "materials": [
+                  {
+                    "itemId": "R0003",
+                    "itemType": "MATERIAL",
+                    "materialName": "[流动资金贷款]保证合同（甲担保公司）",
+                    "sourceSystem": "上银办",
+                    "policyBasis": "第九条；第二十三条2.3；第六条（七）3；第九条；第五条（三）4；第十条（二）5",
+                    "publishDate": "2026年",
+                    "publishDepartment": "上海银行",
+                    "applicability": "APPLICABLE",
+                    "requirement": "",
+                    "productName": "流动资金贷款"
+                  },
+                  {
+                    "itemId": "R0004",
+                    "itemType": "MATERIAL",
+                    "materialName": "[流动资金贷款]保证合同（乙担保公司）",
+                    "sourceSystem": "上银办",
+                    "policyBasis": "第九条；第二十三条2.3；第六条（七）3；第九条；第五条（三）4；第十条（二）5",
+                    "publishDate": "2026年",
+                    "publishDepartment": "上海银行",
+                    "applicability": "APPLICABLE",
+                    "requirement": "",
+                    "productName": "流动资金贷款"
+                  }
+                ]
+              }
+            ],
+            "materials": []
+          },
+          {
+            "categoryId": "3",
+            "categoryName": "放款资料",
+            "children": [
+              {
+                "categoryId": "3.1",
+                "categoryName": "审批及提款材料",
+                "children": [],
+                "materials": [
+                  {
+                    "itemId": "R0005",
+                    "itemType": "MATERIAL",
+                    "materialName": "[流动资金贷款]验资报告（示例借款公司）",
+                    "sourceSystem": "上银办",
+                    "policyBasis": "",
+                    "publishDate": "2026年",
+                    "publishDepartment": "上海银行",
+                    "applicability": "APPLICABLE",
+                    "requirement": "",
+                    "productName": "流动资金贷款"
+                  }
+                ]
+              }
+            ],
+            "materials": []
+          }
+        ]
+      }
+    ]
+  }
+}

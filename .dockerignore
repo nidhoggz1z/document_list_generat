@@ -1,0 +1,12 @@
+# Only deployment sources and active rules enter the build context.
+**
+!Dockerfile
+!.dockerignore
+!src/
+!src/*.py
+!src/requirements.txt
+!src/start.sh
+!list/
+!list/*材料清单.docx
+!list/话术库对应材料.xlsx
+list/~$*

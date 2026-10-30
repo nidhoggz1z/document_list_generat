@@ -1,0 +1,38 @@
+# Local model credentials are maintained separately from source updates.
+model-api.env
+src/log/
+dist/
+
+# Local material lists, backups, and archives.
+/list/
+/list2/
+/listv2/
+/list_v1/
+/list.zip
+
+# Environment files may contain API keys; keep sanitized examples only.
+.env
+.env.*
+*.env
+*.env.*
+!*.env.example
+!.env.example
+
+# Local Python environments and generated files.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+*.log
+~$*
+
+# Runtime business data and manual validation output.
+task_storage/
+/manual_test*/
+/src.tar
+/src.tar.gz
